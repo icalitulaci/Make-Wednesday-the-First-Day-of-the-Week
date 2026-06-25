@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calendar Generator</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f0; color: #1a1a1a; min-height: 100vh; }
+    .page-wrap { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+    h1 { font-family: Trebuchet MS; font-size: 32px; font-weight: 700; margin-bottom: 1.5rem; color: #1a1a1a; }
+    h4 { font-size: 15px; font-weight: 300; margin-bottom: 1.5rem; color: #1a1a1a; }
+    h8 { font-size: 10px; font-weight: 300; margin-top: 1.5rem; margin-bottom: 1.5rem; color: #393939; text-align: center; display: block; }
+
+    /* ── Controls panel ── */
+    .controls { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; margin-bottom: 1rem; padding: 1rem 1.25rem; background: #fff; border: 0.5px solid rgba(0,0,0,0.12); border-radius: 12px; }
+    .ctrl-group { display: flex; flex-direction: column; gap: 4px; }
+    .ctrl-group label { font-size: 12px; color: #666; font-weight: 500; }
+    input[type=number], select { border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; padding: 6px 10px; font-size: 13px; font-family: inherit; background: #fff; color: #1a1a1a; outline: none; transition: border-color 0.15s; }
+    input[type=number] { width: 84px; }
+    select { min-width: 145px; }
+    input[type=number]:focus, select:focus { border-color: #534AB7; }
+
+    /* ── Color customiser panel ── */
+    .color-panel { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; margin-bottom: 1.5rem; padding: 0.85rem 1.25rem; background: #fff; border: 0.5px solid rgba(0,0,0,0.10); border-radius: 12px; }
+    .color-panel-title { width: 100%; font-size: 11px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: -4px; }
+    .color-swatch-group { display: flex; flex-direction: column; gap: 4px; }
+    .color-swatch-group label { font-size: 12px; color: #666; font-weight: 500; }
+    .swatch-row { display: flex; align-items: center; gap: 8px; }
+    input[type=color] { width: 36px; height: 30px; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 6px; cursor: pointer; padding: 2px; background: #fff; }
+    .color-hex { font-size: 12px; color: #444; font-family: monospace; width: 64px; border: 0.5px solid rgba(0,0,0,0.15); border-radius: 6px; padding: 4px 6px; }
+    .color-hex:focus { outline: none; border-color: #534AB7; }
+    .reset-colors-btn { font-size: 12px; color: #999; background: none; border: 0.5px solid rgba(0,0,0,0.15); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-family: inherit; margin-left: auto; align-self: flex-end; }
+    .reset-colors-btn:hover { color: #555; border-color: rgba(0,0,0,0.3); }
+    .color-panel-body {
+      display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end; width:100%;
+      overflow:hidden; max-height:500px; opacity:1; transition:max-height .35s ease, opacity .25s ease, margin-top .35s ease;
+      margin-top:10px;
+    }
+    .color-panel-body.hidden { max-height:0; opacity:0; margin-top:0; }
+    .color-toggle-btn { margin-left:auto; border:0.5px solid rgba(0,0,0,0.15); background:#fff; border-radius:8px; padding:4px 10px; cursor:pointer; font-size:12px; }
+
+    /* ── Weekday picker ── */
+    .weekday-picker { display: flex; gap: 5px; flex-wrap: wrap; }
+    .wd-btn { border: 0.5px solid rgba(0,0,0,0.2); background: #fff; border-radius: 8px; padding: 5px 9px; font-size: 12px; cursor: pointer; color: #666; font-family: inherit; transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s; }
+    .wd-btn.active { color: #fff; }
+
+    /* ── Buttons ── */
+    .right-btns { display: flex; gap: 8px; margin-left: auto; align-items: flex-end; flex-wrap: wrap; }
+    .gen-btn { background: #1a1a1a; border: none; border-radius: 8px; color: #fff; padding: 7px 18px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; transition: background 0.15s, transform 0.1s; display: flex; align-items: center; gap: 6px; }
+    .gen-btn:hover { background: #333; }
+    .gen-btn:active { transform: scale(0.97); }
+    .gen-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .export-btn { background: #6e420f; border: none; border-radius: 8px; color: #fff; padding: 7px 18px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; transition: background 0.15s, transform 0.1s; display: flex; align-items: center; gap: 6px; }
+    .export-btn:hover { background: #8e6f12; }
+    .export-btn:active { transform: scale(0.97); }
+    .export-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── Export dropdown ── */
+    .export-wrap { position: relative; }
+    .export-dropdown { display: none; position: absolute; bottom: calc(100% + 6px); right: 0; background: #fff; border: 0.5px solid rgba(0,0,0,0.15); border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); min-width: 210px; z-index: 100; overflow: hidden; }
+    .export-dropdown.open { display: block; }
+    .export-option { display: flex; align-items: center; gap: 10px; padding: 10px 14px; font-size: 13px; color: #1a1a1a; cursor: pointer; font-family: inherit; background: none; border: none; width: 100%; text-align: left; transition: background 0.12s; }
+    .export-option:hover { background: #f5f5f0; }
+    .export-option i { font-size: 16px; color: #666; }
+    .opt-label { font-weight: 500; }
+    .opt-sub { font-size: 11px; color: #999; }
+    .export-divider { height: 0.5px; background: rgba(0,0,0,0.08); margin: 4px 0; }
+
+    /* PDF size sub-menu */
+    .pdf-sizes { display: none; background: #fafafa; border-top: 0.5px solid rgba(0,0,0,0.07); }
+    .pdf-sizes.open { display: block; }
+    .pdf-size-opt { display: flex; align-items: center; gap: 8px; padding: 8px 14px 8px 38px; font-size: 12px; color: #444; cursor: pointer; background: none; border: none; width: 100%; text-align: left; font-family: inherit; transition: background 0.1s; }
+    .pdf-size-opt:hover { background: #f0f0eb; }
+    .pdf-size-opt .size-badge { font-size: 10px; color: #999; background: #eee; border-radius: 4px; padding: 1px 5px; }
+
+    /* ── Legend ── */
+    .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 1rem; align-items: center; }
+    .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #666; }
+    .legend-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+
+    .status-msg { font-size: 12px; color: #888; margin-bottom: 0.75rem; min-height: 16px; }
+
+    /* ── Calendar grid ── */
+    .months-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; }
+    .month-card { background: #fff; border: 0.5px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 12px; }
+    .month-title { font-size: 13px; font-weight: 500; color: #1a1a1a; margin-bottom: 8px; }
+    .cal-table { width: 100%; border-collapse: collapse; }
+    .cal-table th { font-size: 11px; font-weight: 500; color: #888; text-align: center; padding: 3px 2px; }
+    .cal-table td { text-align: center; padding: 2px; font-size: 12px; position: relative; }
+    .cal-table td span { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; color: #1a1a1a; }
+    .cal-table td.empty span { color: transparent; }
+    .holiday-dot { position: absolute; bottom: 1px; left: 50%; transform: translateX(-50%); width: 3px; height: 3px; border-radius: 50%; }
+
+    /* Holiday list */
+    .holiday-list { margin-top: 8px; padding-top: 8px; border-top: 0.5px solid rgba(0,0,0,0.08); }
+    .holiday-list-item { display: flex; gap: 6px; align-items: baseline; font-size: 10.5px; padding: 2px 0; line-height: 1.4; }
+    .holiday-list-date { font-weight: 600; white-space: nowrap; min-width: 34px; }
+    .holiday-list-name { color: #444; }
+
+    /* ── Print styles ── */
+    @media print {
+      body { background: #fff; }
+      .controls, .color-panel, .legend, .status-msg, h1 { display: none !important; }
+      .page-wrap { padding: 0; max-width: 100%; }
+      .months-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; }
+      .month-card { border: 0.5px solid #ccc; border-radius: 6px; page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+  <h1>Make Wednesday the First Day of the Week</h1>
+  <h4> This is a calender Generator that can make any day of the week as the first day of the week, including wednesday. You can even change the "weekend" for that week.</h4>
+
+  <!-- Main controls -->
+  <div class="controls">
+    <div class="ctrl-group">
+      <label>Year</label>
+      <input type="number" id="yearInput" min="1900" max="2100" value="2026" />
+    </div>
+    <div class="ctrl-group">
+      <label>Week starts on</label>
+      <select id="startDay">
+        <option value="1" selected>Monday</option>
+        <option value="2">Tuesday</option>
+        <option value="3">Wednesday</option>
+        <option value="4">Thursday</option>
+        <option value="5">Friday</option>
+        <option value="6">Saturday</option>
+        <option value="0">Sunday</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <label>Weekend days</label>
+      <div class="weekday-picker" id="weekendPicker"></div>
+    </div>
+    <div class="ctrl-group">
+      <label>Public holidays</label>
+      <select id="countrySelect">
+        <option value="">— None —</option>
+        <option value="AD">Andorra</option><option value="AL">Albania</option><option value="AR">Argentina</option>
+        <option value="AT">Austria</option><option value="AU">Australia</option>
+        <option value="BA">Bosnia</option><option value="BE">Belgium</option><option value="BG">Bulgaria</option>
+        <option value="BO">Bolivia</option><option value="BR">Brazil</option><option value="BY">Belarus</option>
+        <option value="BZ">Belize</option><option value="CA">Canada</option><option value="CH">Switzerland</option>
+        <option value="CL">Chile</option><option value="CN">China</option><option value="CO">Colombia</option>
+        <option value="CR">Costa Rica</option><option value="CY">Cyprus</option><option value="CZ">Czech Republic</option>
+        <option value="DE">Germany</option><option value="DK">Denmark</option><option value="DO">Dominican Republic</option>
+        <option value="EC">Ecuador</option><option value="EE">Estonia</option><option value="EG">Egypt</option>
+        <option value="ES">Spain</option><option value="FI">Finland</option><option value="FR">France</option>
+        <option value="GB">United Kingdom</option><option value="GR">Greece</option><option value="GT">Guatemala</option>
+        <option value="HN">Honduras</option><option value="HR">Croatia</option><option value="HU">Hungary</option>
+        <option value="ID">Indonesia</option><option value="IE">Ireland</option><option value="IL">Israel</option>
+        <option value="IN">India</option><option value="IS">Iceland</option><option value="IT">Italy</option>
+        <option value="JM">Jamaica</option><option value="JP">Japan</option><option value="KE">Kenya</option>
+        <option value="KR">South Korea</option><option value="KZ">Kazakhstan</option>
+        <option value="LT">Lithuania</option><option value="LU">Luxembourg</option><option value="LV">Latvia</option>
+        <option value="MA">Morocco</option><option value="MD">Moldova</option><option value="ME">Montenegro</option>
+        <option value="MK">North Macedonia</option><option value="MT">Malta</option><option value="MX">Mexico</option>
+        <option value="MY">Malaysia</option><option value="NG">Nigeria</option><option value="NI">Nicaragua</option>
+        <option value="NL">Netherlands</option><option value="NO">Norway</option><option value="NZ">New Zealand</option>
+        <option value="PA">Panama</option><option value="PE">Peru</option><option value="PH">Philippines</option>
+        <option value="PL">Poland</option><option value="PT">Portugal</option><option value="PY">Paraguay</option>
+        <option value="RO">Romania</option><option value="RS">Serbia</option><option value="RU">Russia</option>
+        <option value="SA">Saudi Arabia</option><option value="SE">Sweden</option><option value="SG">Singapore</option>
+        <option value="SI">Slovenia</option><option value="SK">Slovakia</option><option value="SV">El Salvador</option>
+        <option value="TN">Tunisia</option><option value="TR">Turkey</option><option value="UA">Ukraine</option>
+        <option value="US">United States</option><option value="UY">Uruguay</option><option value="VE">Venezuela</option>
+        <option value="VN">Vietnam</option><option value="ZA">South Africa</option>
+        <option value="ZM">Zambia</option><option value="ZW">Zimbabwe</option>
+      </select>
+    </div>
+    <div class="right-btns">
+      <button class="gen-btn" id="genBtn"><i class="ti ti-calendar"></i> Generate</button>
+      <div class="export-wrap">
+        <button class="export-btn" id="exportBtn"><i class="ti ti-upload"></i> Export <i class="ti ti-chevron-down" style="font-size:11px;margin-left:2px;"></i></button>
+        <div class="export-dropdown" id="exportDropdown">
+          <!-- PDF with size sub-menu -->
+          <button class="export-option" id="optPDFToggle">
+            <i class="ti ti-file-type-pdf"></i>
+            <div><div class="opt-label">PDF</div><div class="opt-sub">Choose paper size</div></div>
+            <i class="ti ti-chevron-down" style="font-size:11px;margin-left:auto;"></i>
+          </button>
+          <div class="pdf-sizes" id="pdfSizes">
+            <button class="pdf-size-opt" data-fmt="a4" data-orient="portrait">A4 Portrait <span class="size-badge">210×297mm</span></button>
+            <button class="pdf-size-opt" data-fmt="a4" data-orient="landscape">A4 Landscape <span class="size-badge">297×210mm</span></button>
+            <button class="pdf-size-opt" data-fmt="a3" data-orient="portrait">A3 Portrait <span class="size-badge">297×420mm</span></button>
+            <button class="pdf-size-opt" data-fmt="a3" data-orient="landscape">A3 Landscape <span class="size-badge">420×297mm</span></button>
+            <button class="pdf-size-opt" data-fmt="a5" data-orient="portrait">A5 Portrait <span class="size-badge">148×210mm</span></button>
+            <button class="pdf-size-opt" data-fmt="letter" data-orient="portrait">Letter Portrait <span class="size-badge">216×279mm</span></button>
+            <button class="pdf-size-opt" data-fmt="letter" data-orient="landscape">Letter Landscape <span class="size-badge">279×216mm</span></button>
+            <button class="pdf-size-opt" data-fmt="legal" data-orient="portrait">Legal <span class="size-badge">216×356mm</span></button>
+          </div>
+          <div class="export-divider"></div>
+          <button class="export-option" id="optPrint">
+            <i class="ti ti-printer"></i>
+            <div><div class="opt-label">Print / Browser PDF</div><div class="opt-sub">Use OS print dialog</div></div>
+          </button>
+          <div class="export-divider"></div>
+          <button class="export-option" id="optImage">
+            <i class="ti ti-photo"></i>
+            <div><div class="opt-label">Image</div><div class="opt-sub">PNG, high resolution</div></div>
+          </button>
+          <button class="export-option" id="optCSV">
+            <i class="ti ti-table"></i>
+            <div><div class="opt-label">CSV</div><div class="opt-sub">All dates + holidays</div></div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Color customiser -->
+  <div class="color-panel" id="colorPanel">
+    <div class="color-panel-title">Colour scheme <button class="color-toggle-btn" id="toggleColors">Customise</button></div><div class="color-panel-body hidden" id="colorPanelBody">
+    <div class="color-swatch-group">
+      <label>Weekend</label>
+      <div class="swatch-row">
+        <input type="color" id="clrWeekend" value="#e89289" />
+        <input type="text" class="color-hex" id="hexWeekend" value="#e89289" maxlength="7" />
+      </div>
+    </div>
+    <div class="color-swatch-group">
+      <label>Public holiday</label>
+      <div class="swatch-row">
+        <input type="color" id="clrHoliday" value="#f5ce8e" />
+        <input type="text" class="color-hex" id="hexHoliday" value="#f5ce8e" maxlength="7" />
+      </div>
+    </div>
+    <div class="color-swatch-group">
+      <label>Today</label>
+      <div class="swatch-row">
+        <input type="color" id="clrToday" value="#A93226" />
+        <input type="text" class="color-hex" id="hexToday" value="#A93226" maxlength="7" />
+      </div>
+    </div>
+    <button class="reset-colors-btn" id="resetColors"><i class="ti ti-refresh" style="font-size:12px;"></i> Reset</button>
+  </div>
+</div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" id="ldWeekend"></div> Weekend</div>
+    <div class="legend-item"><div class="legend-dot" id="ldHoliday"></div> Public holiday</div>
+    <div class="legend-item"><div class="legend-dot" id="ldToday"></div> Today</div>
+  </div>
+
+  <div class="status-msg" id="statusMsg"></div>
+  <div class="months-grid" id="calGrid"></div>
+
+  <h8> made for fun by <a href="https://github.com/icalitulaci">icalitulaci</a>  </h8>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+  const DAY_NAMES   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const PICKER_ORDER = [1,2,3,4,5,6,0];
+  const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const SHORT_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  // ── Colour defaults ──
+  const DEFAULTS = { weekend: '#e89289', holiday: '#f5ce8e', today: '#A93226' };
+  let colors = { ...DEFAULTS };
+
+  // ── State ──
+  let pendingWeekend = new Set([6,0]);
+  let activeYear = 2026, activeStartDay = 1, activeWeekend = new Set([6,0]);
+  let holidays = {};
+  let isExporting = false;
+
+  const today = new Date();
+  const todayY = today.getFullYear(), todayM = today.getMonth(), todayD = today.getDate();
+
+  function setStatus(msg) { document.getElementById('statusMsg').textContent = msg; }
+
+  // ── Hex helpers ──
+  function hexToRgb(hex) {
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    return {r,g,b};
+  }
+  function lighten(hex, amount=0.85) {
+    const {r,g,b} = hexToRgb(hex);
+    const lr = Math.round(r + (255-r)*amount);
+    const lg = Math.round(g + (255-g)*amount);
+    const lb = Math.round(b + (255-b)*amount);
+    return `rgb(${lr},${lg},${lb})`;
+  }
+  function darken(hex, amount=0.6) {
+    const {r,g,b} = hexToRgb(hex);
+    return `rgb(${Math.round(r*(1-amount))},${Math.round(g*(1-amount))},${Math.round(b*(1-amount))})`;
+  }
+  function isValidHex(h) { return /^#[0-9a-fA-F]{6}$/.test(h); }
+
+  // ── Update legend dots ──
+  function updateLegend() {
+    document.getElementById('ldWeekend').style.background = lighten(colors.weekend,0.2);
+    document.getElementById('ldHoliday').style.background = lighten(colors.holiday,0.2);
+    const dot = document.getElementById('ldToday');
+    dot.style.background = colors.today;
+    dot.style.boxShadow = `0 0 0 2px ${lighten(colors.today, 0.5)}`;
+  }
+
+  // ── Color pickers wiring ──
+  function wireColor(pickerId, hexId, key) {
+    const picker = document.getElementById(pickerId);
+    const hexInput = document.getElementById(hexId);
+    picker.addEventListener('input', () => {
+      colors[key] = picker.value;
+      hexInput.value = picker.value;
+      updateLegend();
+      refreshWdBtns();
+    });
+    hexInput.addEventListener('input', () => {
+      const v = hexInput.value;
+      if (isValidHex(v)) { colors[key] = v; picker.value = v; updateLegend(); refreshWdBtns(); }
+    });
+  }
+  wireColor('clrWeekend','hexWeekend','weekend');
+  wireColor('clrHoliday','hexHoliday','holiday');
+  wireColor('clrToday','hexToday','today');
+
+  document.getElementById('resetColors').addEventListener('click', () => {
+    colors = { ...DEFAULTS };
+    ['weekend','holiday','today'].forEach(k => {
+      document.getElementById('clr'+k.charAt(0).toUpperCase()+k.slice(1)).value = colors[k];
+      document.getElementById('hex'+k.charAt(0).toUpperCase()+k.slice(1)).value = colors[k];
+    });
+    updateLegend();
+    refreshWdBtns();
+  });
+
+  // ── Weekday picker ──
+  function refreshWdBtns() {
+    document.querySelectorAll('.wd-btn').forEach(btn => {
+      const d = parseInt(btn.dataset.day);
+      if (pendingWeekend.has(d)) {
+        btn.style.background = colors.weekend;
+        btn.style.borderColor = colors.weekend;
+        btn.style.color = '#fff';
+        btn.style.boxShadow = `0 0 0 3px ${lighten(colors.weekend, 0.5)}`;
+      } else {
+        btn.style.background = '';
+        btn.style.borderColor = '';
+        btn.style.color = '';
+        btn.style.boxShadow = '';
+      }
+    });
+  }
+
+  function buildWeekdayPicker() {
+    const picker = document.getElementById('weekendPicker');
+    picker.innerHTML = '';
+    PICKER_ORDER.forEach(i => {
+      const btn = document.createElement('button');
+      btn.className = 'wd-btn';
+      btn.textContent = DAY_NAMES[i].slice(0,3);
+      btn.dataset.day = i;
+      btn.onclick = () => {
+        const d = parseInt(btn.dataset.day);
+        if (pendingWeekend.has(d)) pendingWeekend.delete(d);
+        else pendingWeekend.add(d);
+        refreshWdBtns();
+      };
+      picker.appendChild(btn);
+    });
+    refreshWdBtns();
+  }
+
+  // ── Fetch holidays ──
+  async function fetchHolidays(countryCode, year) {
+    if (!countryCode) { holidays = {}; return; }
+    setStatus('Fetching public holidays…');
+    try {
+      const res = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/${countryCode}`);
+      if (!res.ok) { setStatus('Could not load holidays for this country.'); holidays = {}; return; }
+      const data = await res.json();
+      holidays = {};
+      data.forEach(h => { holidays[h.date] = { name: h.name, localName: h.localName }; });
+      setStatus(`Loaded ${data.length} public holidays.`);
+    } catch (e) { setStatus('Holiday fetch failed.'); holidays = {}; }
+  }
+
+  // ── Build month card ──
+  function buildMonth(monthIdx, forExport = false) {
+    const orderedDays = [];
+    for (let i = 0; i < 7; i++) orderedDays.push((activeStartDay + i) % 7);
+
+    const card = document.createElement('div');
+    card.className = 'month-card';
+
+    const title = document.createElement('div');
+    title.className = 'month-title';
+    title.textContent = MONTH_NAMES[monthIdx] + ' ' + activeYear;
+    card.appendChild(title);
+
+    const table = document.createElement('table');
+    table.className = 'cal-table';
+    const thead = document.createElement('thead');
+    const hrow = document.createElement('tr');
+    orderedDays.forEach(d => {
+      const th = document.createElement('th');
+      th.textContent = DAY_NAMES[d].slice(0,2);
+      if (activeWeekend.has(d)) { th.style.color = colors.weekend; }
+      hrow.appendChild(th);
+    });
+    thead.appendChild(hrow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    const firstDow = new Date(activeYear, monthIdx, 1).getDay();
+    const daysInMonth = new Date(activeYear, monthIdx + 1, 0).getDate();
+    const offset = (firstDow - activeStartDay + 7) % 7;
+
+    let day = 1, cellCount = 0;
+    let row = document.createElement('tr');
+    const monthHolidays = [];
+
+    for (let c = 0; c < offset; c++) {
+      const td = document.createElement('td'); td.className = 'empty'; td.innerHTML = '<span></span>';
+      row.appendChild(td); cellCount++;
+    }
+
+    while (day <= daysInMonth) {
+      if (cellCount === 7) { tbody.appendChild(row); row = document.createElement('tr'); cellCount = 0; }
+      const dow = new Date(activeYear, monthIdx, day).getDay();
+      const isWeekend = activeWeekend.has(dow);
+      const isToday = forExport ? false : (activeYear === todayY && monthIdx === todayM && day === todayD);
+      const mm = String(monthIdx + 1).padStart(2,'0');
+      const dd = String(day).padStart(2,'0');
+      const dateKey = `${activeYear}-${mm}-${dd}`;
+      const hEntry = holidays[dateKey];
+      const isHoliday = !!hEntry;
+
+      if (isHoliday) monthHolidays.push({ day, name: hEntry.localName || hEntry.name });
+
+      const td = document.createElement('td');
+      const span = document.createElement('span');
+      span.textContent = day;
+
+      if (isToday) {
+        span.style.background = colors.today;
+        span.style.color = '#fff';
+        span.style.fontWeight = '500';
+        span.style.boxShadow = `0 0 0 2px ${lighten(colors.today, 0.5)}`;
+      } else if (isWeekend && isHoliday) {
+        span.style.background = `linear-gradient(135deg, ${colors.weekend} 50%, ${colors.holiday} 50%)`;
+        span.style.color = colors.weekend;
+        span.style.fontWeight = '500';
+      } else if (isWeekend) {
+        span.style.background = colors.weekend;
+        span.style.color = '#fff';
+        span.style.fontWeight = '500';
+      } else if (isHoliday) {
+        span.style.background = colors.holiday;
+        span.style.color = '#fff';
+        span.style.fontWeight = '500';
+      }
+
+      td.appendChild(span);
+
+      if (isHoliday && !isToday) {
+        const dot = document.createElement('div');
+        dot.className = 'holiday-dot';
+        dot.style.background = colors.holiday;
+        td.appendChild(dot);
+        td.title = hEntry.localName || hEntry.name;
+      }
+      row.appendChild(td); cellCount++; day++;
+    }
+
+    while (cellCount > 0 && cellCount < 7) {
+      const td = document.createElement('td'); td.className = 'empty'; td.innerHTML = '<span></span>';
+      row.appendChild(td); cellCount++;
+    }
+    if (row.children.length > 0) tbody.appendChild(row);
+    table.appendChild(tbody);
+    card.appendChild(table);
+
+    if (monthHolidays.length > 0) {
+      const list = document.createElement('div');
+      list.className = 'holiday-list';
+      monthHolidays.forEach(h => {
+        const item = document.createElement('div');
+        item.className = 'holiday-list-item';
+        const ddStr = String(h.day).padStart(2,'0');
+        const dateSpan = document.createElement('span');
+        dateSpan.className = 'holiday-list-date';
+        dateSpan.style.color = colors.holiday;
+        dateSpan.textContent = `${ddStr} ${SHORT_MONTHS[monthIdx]}`;
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'holiday-list-name';
+        nameSpan.textContent = h.name;
+        item.appendChild(dateSpan);
+        item.appendChild(nameSpan);
+        list.appendChild(item);
+      });
+      card.appendChild(list);
+    }
+
+    return card;
+  }
+
+  // ── Render ──
+  async function render() {
+    activeYear = parseInt(document.getElementById('yearInput').value);
+    activeStartDay = parseInt(document.getElementById('startDay').value);
+    activeWeekend = new Set(pendingWeekend);
+    const country = document.getElementById('countrySelect').value;
+
+    document.getElementById('genBtn').disabled = true;
+    await fetchHolidays(country, activeYear);
+
+    const grid = document.getElementById('calGrid');
+    grid.innerHTML = '';
+    for (let m = 0; m < 12; m++) grid.appendChild(buildMonth(m, false));
+    document.getElementById('genBtn').disabled = false;
+    if (!country) setStatus('');
+    updateLegend();
+  }
+
+  // ── Build export-safe grid (no today highlight) ──
+  function buildExportGrid() {
+    const wrap = document.createElement('div');
+    const oldTodayY = todayY, oldTodayM = todayM, oldTodayD = todayD;
+    wrap.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:16px;background:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;';
+    for (let m = 0; m < 12; m++) {
+      const card = buildMonth(m, true);
+      card.style.cssText = 'background:#fff;border:0.5px solid rgba(0,0,0,0.1);border-radius:12px;padding:12px;';
+      wrap.appendChild(card);
+    }
+    return wrap;
+  }
+
+  // ── Export: PDF ──
+  async function exportPDF(fmt, orient) {
+    isExporting = true;
+    setStatus(`Generating ${fmt.toUpperCase()} ${orient} PDF…`);
+    document.getElementById('exportBtn').disabled = true;
+    try {
+      const exportGrid = buildExportGrid();
+      exportGrid.style.width = '1200px';
+      exportGrid.style.position = 'fixed';
+      exportGrid.style.left = '-9999px';
+      exportGrid.style.top = '0';
+      document.body.appendChild(exportGrid);
+
+      await new Promise(r => setTimeout(r, 100));
+
+      const canvas = await html2canvas(exportGrid, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+      document.body.removeChild(exportGrid);
+
+      const imgData = canvas.toDataURL('image/png');
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation: orient, unit: 'mm', format: fmt });
+      pdf.setCreationDate(new Date(2000,0,1));
+      pdf.setDocumentProperties({title:'Calendar', subject:'', author:'', creator:'', keywords:''});
+      const pdfW = pdf.internal.pageSize.getWidth();
+      const pdfH = pdf.internal.pageSize.getHeight();
+      const margin = 10;
+      const usableW = pdfW - margin * 2;
+      const usableH = pdfH - margin * 2 - 8;
+      const ratio = canvas.width / canvas.height;
+      let drawW = usableW, drawH = drawW / ratio;
+      if (drawH > usableH) { drawH = usableH; drawW = drawH * ratio; }
+      const x = margin + (usableW - drawW) / 2;
+      pdf.addImage(imgData, 'PNG', x, margin, drawW, drawH, undefined, 'NONE');
+      pdf.save(`calendar-${activeYear}-${fmt}-${orient}.pdf`);
+      setStatus('PDF downloaded!');
+    } catch (e) { setStatus('PDF failed: ' + e.message); }
+    document.getElementById('exportBtn').disabled = false;
+    isExporting = false;
+  }
+
+  // ── Export: Image ──
+  async function exportImage() {
+    isExporting = true;
+    setStatus('Generating image…');
+    document.getElementById('exportBtn').disabled = true;
+    try {
+      const exportGrid = buildExportGrid();
+      exportGrid.style.width = '1200px';
+      exportGrid.style.position = 'fixed';
+      exportGrid.style.left = '-9999px';
+      exportGrid.style.top = '0';
+      document.body.appendChild(exportGrid);
+      await new Promise(r => setTimeout(r, 100));
+      const canvas = await html2canvas(exportGrid, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+      document.body.removeChild(exportGrid);
+      const link = document.createElement('a');
+      link.download = `calendar-${activeYear}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      setStatus('Image downloaded!');
+    } catch (e) { setStatus('Image export failed: ' + e.message); }
+    document.getElementById('exportBtn').disabled = false;
+    isExporting = false;
+  }
+
+  // ── Export: CSV ──
+  function exportCSV() {
+    const rows = [['Date','Day','Month','Year','Is Weekend','Is Holiday','Holiday Name']];
+    for (let m = 0; m < 12; m++) {
+      const dim = new Date(activeYear, m + 1, 0).getDate();
+      for (let d = 1; d <= dim; d++) {
+        const dow = new Date(activeYear, m, d).getDay();
+        const mm = String(m+1).padStart(2,'0'), dd = String(d).padStart(2,'0');
+        const key = `${activeYear}-${mm}-${dd}`;
+        const hEntry = holidays[key];
+        rows.push([key, DAY_NAMES[dow], MONTH_NAMES[m], activeYear,
+          activeWeekend.has(dow)?'Yes':'No', hEntry?'Yes':'No',
+          hEntry?(hEntry.localName||hEntry.name):'']);
+      }
+    }
+    const csv = rows.map(r => r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const link = document.createElement('a');
+    link.download = `calendar-${activeYear}.csv`;
+    link.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+    link.click();
+    setStatus('CSV downloaded!');
+  }
+
+  // ── Export dropdown ──
+  const exportBtn = document.getElementById('exportBtn');
+  const exportDropdown = document.getElementById('exportDropdown');
+  exportBtn.addEventListener('click', e => { e.stopPropagation(); exportDropdown.classList.toggle('open'); });
+  document.addEventListener('click', () => { exportDropdown.classList.remove('open'); document.getElementById('pdfSizes').classList.remove('open'); });
+
+  document.getElementById('optPDFToggle').addEventListener('click', e => {
+    e.stopPropagation();
+    document.getElementById('pdfSizes').classList.toggle('open');
+  });
+
+  document.querySelectorAll('.pdf-size-opt').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      exportDropdown.classList.remove('open');
+      exportPDF(btn.dataset.fmt, btn.dataset.orient);
+    });
+  });
+
+  document.getElementById('optPrint').addEventListener('click', () => {
+    exportDropdown.classList.remove('open');
+    window.print();
+  });
+  document.getElementById('optImage').addEventListener('click', () => { exportDropdown.classList.remove('open'); exportImage(); });
+  document.getElementById('optCSV').addEventListener('click', () => { exportDropdown.classList.remove('open'); exportCSV(); });
+
+
+  document.getElementById('toggleColors').addEventListener('click', () => {
+    const body = document.getElementById('colorPanelBody');
+    const btn = document.getElementById('toggleColors');
+    body.classList.toggle('hidden');
+    btn.textContent = body.classList.contains('hidden') ? 'Customise' : 'Hide';
+  });
+
+  document.getElementById('genBtn').addEventListener('click', render);
+
+  buildWeekdayPicker();
+  updateLegend();
+  render();
+
+
+</script>
+</body>
+</html>
